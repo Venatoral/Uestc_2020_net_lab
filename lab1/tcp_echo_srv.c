@@ -67,13 +67,21 @@ int main(int argc, char* argv[]) {
     }
     // set signals
     to_exit = false;
+    // SIGPIPE
     struct sigaction sigact_pipe, old_sigact_pipe;
     sigact_pipe.sa_handler = sig_pipe;
     sigemptyset(&sigact_pipe.sa_mask);
     sigact_pipe.sa_flags = 0;
     sigact_pipe.sa_flags |= SA_RESTART;
     sigaction(SIGPIPE, &sigact_pipe, &old_sigact_pipe);
+    // SIGINT
+    struct sigaction sigact_int, old_sigact_int;
+    sigact_int.sa_handler = sig_int;
+    sigemptyset(&sigact_int.sa_mask);
+    sigact_int.sa_flags = 0;
+    sigaction(SIGINT, &sigact_int, &old_sigact_int);
 
+    // get ip and port
     char* bind_ip = argv[1];
     in_port_t bind_port = atoi(argv[2]);
 
