@@ -14,12 +14,23 @@
 
 bool to_exit;
 int sig_type;
-void handle(int fd) {
+void echo_rep(int fd) {
+    int len = 0;
     char *buf = malloc(512);
     int res = 1;
     while (1) {
         memset(buf, 0, 512);
-        res = read(fd, buf, 512);
+        res = read(fd, &len, sizeof(len));
+        if (res < 0) {
+            printf("[srv] read len return %d and errno is %d\n", res, errno);
+            if (errno == EINTR && sig_type != SIGINT) {
+                continue;
+            }
+            return;
+        }
+        if (res == 0)
+            return;
+        res = read(fd, buf, len);
         if (res < 0) {
             printf("[srv] read len return %d and errno is %d\n", res, errno);
             if (errno == EINTR && sig_type != SIGINT) {
@@ -30,18 +41,22 @@ void handle(int fd) {
         }
         if(res == 0)
             return;
-        buf[res - 1] = '\0';
+        buf[res] = '\0';
         printf("[echo_rqt] %s\n", buf);
         // send back
-        write(fd, buf, 512);
+        write(fd, &len, sizeof(len));
+        write(fd, buf, len);
     }
 }
 
-void sigInt(int signo) {
+void sig_int(int signo) {
     sig_type = SIGINT;
+    to_exit = true;
+    printf("[srv] SIGINT is coming!\n");
 }
-void sigPipe() {
-    printf("[src] SIGPIPE is comming!\n");
+void sig_pipe() {
+    sig_type = SIGPIPE;
+    printf("[src] SIGPIPE is coming!\n");
 }
 
 
@@ -53,7 +68,7 @@ int main(int argc, char* argv[]) {
     // set signals
     to_exit = false;
     struct sigaction sigact_pipe, old_sigact_pipe;
-    sigact_pipe.sa_handler = sigPipe;
+    sigact_pipe.sa_handler = sig_pipe;
     sigemptyset(&sigact_pipe.sa_mask);
     sigact_pipe.sa_flags = 0;
     sigact_pipe.sa_flags |= SA_RESTART;
@@ -91,7 +106,7 @@ int main(int argc, char* argv[]) {
     int         client_fd;
     char*       client_ip;
     int         client_port;
-    while(1) {
+    while(!to_exit) {
         client_fd = accept(listen_fd, (struct sockaddr *)&client, &addr_len); 
         if( client_fd == -1 && errno == EINTR && sig_type == SIGINT)
             break;
@@ -101,7 +116,7 @@ int main(int argc, char* argv[]) {
         client_port = ntohs(client.sin_port);
         printf("[srv] client[%s:%d] is accepted!\n", client_ip, client_port);
         // start reading
-        handle(client_fd);
+        echo_rep(client_fd);
         close(client_fd);
         printf("[srv] connfd is closed!\n");
     }

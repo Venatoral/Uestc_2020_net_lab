@@ -13,6 +13,7 @@
 void echo_rqt(int fd) {
     int res = 0;
     char* buf = malloc(512);
+    int len = 0;
     while (1) {
         memset(buf, 0, 512);
         res = read(0, buf, 512);
@@ -21,14 +22,24 @@ void echo_rqt(int fd) {
         if( strncmp(buf, "exit", 4) == 0) {
             return;
         }
-        // send to server
-        write(fd, buf, 512);
+        len = strlen(buf) + 1;
+        // send to server ( size then msg)
+        write(fd, &len, sizeof(len));
+        write(fd, buf, len);
+
         // read msg from server
         memset(buf, 0, 512);
-        res = read(fd, buf, 512);
+        res = read(fd, &len, sizeof(len));
         if(res <= 0) {
             return;
         }
+
+        res = read(fd, buf, len);
+
+        if(res <= 0) {
+            return;
+        }
+
         printf("[echo_rep] %s\n", buf);
     }
 }
