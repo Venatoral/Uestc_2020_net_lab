@@ -9,18 +9,17 @@
 
 #define MAX_CMD_STR 100
 #define SOCKADDR_SIZE sizeof(struct sockaddr)
+
 int echo_rqt(int fd) {
     int res = 0;
     char* buf = malloc(MAX_CMD_STR + 1);
     int len = 0;
-    while (1) {
-        memset(buf, 0, MAX_CMD_STR + 1);
-        res = read(0, buf, MAX_CMD_STR + 1);
+    while (fgets(buf, MAX_CMD_STR, stdin)) {
         // if input exit then exit
         if( strncmp(buf, "exit", 4) == 0) {
             break;
         }
-        buf[res - 1] = '\0';
+        buf[strlen(buf) - 1] = '\0';
         len = strlen(buf) + 1;
         // send to server ( size then msg)
         write(fd, &len, sizeof(len));
@@ -42,32 +41,31 @@ int echo_rqt(int fd) {
 }
 int main(int argc, char* argv[]) {
     if(argc != 3) {
-        fprintf(stderr, "<Usage> ./client [IP] [PORT]\n");
+        fprintf(stderr, "<Usage> ./%s [IP] [PORT]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    struct sockaddr_in client;
-    int client_fd =  socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in srv_addr;
+    int connfd =  socket(AF_INET, SOCK_STREAM, 0);
     char* ip = argv[1];
     in_port_t p = atoi(argv[2]);
-    memset(&client, 0, sizeof(struct sockaddr_in));
-    client.sin_family = AF_INET;
-    client.sin_port = htons(p);
-    client.sin_addr.s_addr = inet_addr(ip);
+    memset(&srv_addr, 0, sizeof(struct sockaddr_in));
+    srv_addr.sin_family = AF_INET;
+    srv_addr.sin_port = htons(p);
+    inet_pton(AF_INET, ip, &srv_addr.sin_addr);
     int res;
     while(1) {
-        res = connect(client_fd, (struct sockaddr *)&client, SOCKADDR_SIZE); 
-        if (res == -1 && errno == EINTR)
+        res = connect(connfd, (struct sockaddr *)&srv_addr, SOCKADDR_SIZE); 
+        if (res == 0) {
+            // after connecton 
+            printf("[cli] server[%s:%d] is connected!\n", ip, p);
+            res = echo_rqt(connfd);
+            if(res == 0)
+                break;
+        } else if( res == -1 && errno == EINTR)
             continue;
-        if (res == -1)
-            break;
-        // after connecton 
-        printf("[cli] server[%s:%d] is connected!\n", ip, p);
-        res = echo_rqt(client_fd);
-        if(res == 0)
-            break;
     }
 
-    close(client_fd);
+    close(connfd);
     printf("[cli] connfd is closed\n");
     printf("[cli] client is going to exit!\n");
     return 0;
