@@ -1,47 +1,44 @@
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netinet/in.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
+#define MAX_CMD_STR 100
 #define SOCKADDR_SIZE sizeof(struct sockaddr)
-void echo_rqt(int fd) {
+int echo_rqt(int fd) {
     int res = 0;
-    char* buf = malloc(512);
+    char* buf = malloc(MAX_CMD_STR + 1);
     int len = 0;
     while (1) {
-        memset(buf, 0, 512);
-        res = read(0, buf, 512);
-        buf[res - 1] = '\0';
+        memset(buf, 0, MAX_CMD_STR + 1);
+        res = read(0, buf, MAX_CMD_STR + 1);
         // if input exit then exit
         if( strncmp(buf, "exit", 4) == 0) {
-            return;
+            break;
         }
+        buf[res - 1] = '\0';
         len = strlen(buf) + 1;
         // send to server ( size then msg)
         write(fd, &len, sizeof(len));
         write(fd, buf, len);
-
-        // read msg from server
-        memset(buf, 0, 512);
+        // read msg length from server
+        memset(buf, 0, MAX_CMD_STR + 1);
         res = read(fd, &len, sizeof(len));
         if(res <= 0) {
-            return;
+            break;
         }
-
+        // read msg
         res = read(fd, buf, len);
-
         if(res <= 0) {
-            return;
+            break;
         }
-
         printf("[echo_rep] %s\n", buf);
     }
+    return 0;
 }
 int main(int argc, char* argv[]) {
     if(argc != 3) {
@@ -56,14 +53,19 @@ int main(int argc, char* argv[]) {
     client.sin_family = AF_INET;
     client.sin_port = htons(p);
     client.sin_addr.s_addr = inet_addr(ip);
-
-    if( connect(client_fd, (struct sockaddr*)&client, SOCKADDR_SIZE) == -1) {
-        perror("connect");
-        exit(EXIT_FAILURE);
+    int res;
+    while(1) {
+        res = connect(client_fd, (struct sockaddr *)&client, SOCKADDR_SIZE); 
+        if (res == -1 && errno == EINTR)
+            continue;
+        if (res == -1)
+            break;
+        // after connecton 
+        printf("[cli] server[%s:%d] is connected!\n", ip, p);
+        res = echo_rqt(client_fd);
+        if(res == 0)
+            break;
     }
-    // after connecton 
-    printf("[cli] server[%s:%d] is connected!\n", ip, p);
-    echo_rqt(client_fd);
 
     close(client_fd);
     printf("[cli] connfd is closed\n");
