@@ -15,6 +15,7 @@
 bool to_exit;
 int sig_type;
 
+
 typedef struct _PDU {
     int pin;
     int len;
