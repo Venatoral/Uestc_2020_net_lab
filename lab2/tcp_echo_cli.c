@@ -93,13 +93,14 @@ int main(int argc, char* argv[]) {
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_port = htons(p);
     inet_pton(AF_INET, ip, &srv_addr.sin_addr);
-    // open file and show info
+    // show created
+    fprintf(log_file_ptr, "[cli](%d) child process %d is created!\n", getpid(), pin);
     int res;
     while(1) {
         res = connect(connfd, (struct sockaddr *)&srv_addr, SOCKADDR_SIZE); 
         if (res == 0) {
             // after connecton 
-            printf("[cli](%d) server[%s:%d] is connected!\n", getpid(), ip, p);
+            fprintf(log_file_ptr, "[cli](%d) server[%s:%d] is connected!\n", getpid(), ip, p);
             res = echo_rqt(connfd, pin);
             if(res == 0)
                 break;
@@ -107,7 +108,7 @@ int main(int argc, char* argv[]) {
             continue;
     }
     close(connfd);
-    fprintf(log_file_ptr, "[cli](%d) connfd is closed\n", getpid());
+    fprintf(log_file_ptr, "[cli](%d) connfd is closed!\n", getpid());
     fprintf(log_file_ptr, "[cli](%d) client process is going to exit!\n", getpid());
     fclose(log_file_ptr);
     printf("[cli](%d) %s is closed!\n", getpid(), log_file_name);

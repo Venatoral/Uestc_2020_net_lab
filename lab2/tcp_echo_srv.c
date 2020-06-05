@@ -75,13 +75,13 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
     to_exit = false;
-    printf("[srv](%d) stu_srv_res_p.txt is opened!", getpid());
+    printf("[srv](%d) stu_srv_res_p.txt is opened!\n", getpid());
     // SIGPIPE
     struct sigaction sigact_pipe, old_sigact_pipe;
     sigact_pipe.sa_handler = sig_pipe;
     sigemptyset(&sigact_pipe.sa_mask);
     sigact_pipe.sa_flags = 0;
-    sigact_pipe.sa_flags |= SA_RESTART;
+    // sigact_pipe.sa_flags |= SA_RESTART;
     sigaction(SIGPIPE, &sigact_pipe, &old_sigact_pipe);
     // SIGCHLD
     struct sigaction sigact_chld, old_sigact_chld;
@@ -94,7 +94,6 @@ int main(int argc, char* argv[]) {
     sigact_int.sa_handler = sig_int;
     sigemptyset(&sigact_int.sa_mask);
     sigact_int.sa_flags = 0;
-    
     sigaction(SIGINT, &sigact_int, &old_sigact_int);
 
     // get ip and port
@@ -115,6 +114,7 @@ int main(int argc, char* argv[]) {
     }
     // bind
     fprintf(fp, "[srv](%d) server[%s:%d] is initializing!\n", getpid(), bind_ip, bind_port);
+    fflush(fp);
     if( bind(listen_fd, (struct sockaddr*)&server, SOCKADDR_SIZE) == -1 ) {
         perror("bind");
         exit(EXIT_FAILURE);
@@ -140,6 +140,7 @@ int main(int argc, char* argv[]) {
         client_port = ntohs(client.sin_port);
         // show accept info
         fprintf(fp, "[srv](%d) client[%s:%d] is accepted!\n", getpid(), client_ip, client_port);
+        fflush(fp);
         // fork and start reading
         pid_t pid = fork();
         // for child process
@@ -160,17 +161,18 @@ int main(int argc, char* argv[]) {
             fprintf(cfp, "[srv](%d) listenfd is closed!\n", getpid());
             // start to handle req
             int pin = echo_rep(client_fd, cfp);
-            close(client_fd);
-            fprintf(cfp, "[srv](%d) connfd is closed!\n", getpid());
-            // close file
-            fprintf(cfp, "[srv](%d) child process is going to exit!\n", getpid());
-            fclose(cfp);
-            printf("[srv](%d) %s is closed!\n", getpid(), fn_res);
             // rename file
             char fn_new_name[32] = {0};
             sprintf(fn_new_name, "stu_srv_res_%d.txt", pin);
             rename(fn_res, fn_new_name);
-            printf("[srv](%d) res file rename done!\n", getpid());
+            fprintf(cfp, "[srv](%d) res file rename done!\n", getpid());
+            // close client fd
+            close(client_fd);
+            fprintf(cfp, "[srv](%d) connfd is closed!\n", getpid());
+            // close file and exit
+            fprintf(cfp, "[srv](%d) child process is going to exit!\n", getpid());
+            fclose(cfp);
+            printf("[srv](%d) %s is closed!\n", getpid(), fn_res);
             exit(EXIT_SUCCESS);
         }
         close(client_fd);
@@ -178,7 +180,7 @@ int main(int argc, char* argv[]) {
     // close listen socket
     close(listen_fd);
     fprintf(fp, "[srv](%d) listenfd is closed!\n", getpid());
-    fprintf(fp,"[srv](%d) parent process is going to exit\n", getpid());
+    fprintf(fp, "[srv](%d) parent process is going to exit\n", getpid());
     // close file
     fclose(fp);
     printf("[srv](%d) stu_srv_res_p.txt is closed!\n", getpid());
