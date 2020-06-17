@@ -1,0 +1,15 @@
+[cli](11113) server[127.0.0.1:8009] is connected!
+[echo_rep](11113) KiZ 1 l2zzJM 
+
+[echo_rep](11113) O EcE9v 
+
+[echo_rep](11113) I TmYeH2V Wetfa s6O01f4 
+
+[echo_rep](11113) 
+[echo_rep](11113) aul3w n SAGJ2UD 
+
+[echo_rep](11113)  qnAA7e wi G o vBj 
+
+[echo_rep](11113) 
+[cli](11112) connfd is closed!
+[cli](11112) child process is going to exit!
