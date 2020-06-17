@@ -1,6 +1,0 @@
-[srv](11074) server[127.0.0.1:8009] is initializing!
-[srv](11074) client[127.0.0.1:36430] is accepted!
-[srv](11074) client[127.0.0.1:36432] is accepted!
-[srv](11074) client[127.0.0.1:36434] is accepted!
-[srv](11074) client[127.0.0.1:36436] is accepted!
-[srv](11074) client[127.0.0.1:36438] is accepted!
